@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Reminder Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .app-container {
+            max-width: 420px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page {
+            display: none;
+            min-height: 100vh;
+            animation: slideIn 0.3s ease-in-out;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .back-btn, .menu-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        
+        .back-btn:hover, .menu-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .header-title {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: white;
+            border-radius: 20px 20px 0 0;
+        }
+        
+        .user-profile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .user-info h2 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .user-info p {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            padding: 30px 20px 80px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+        }
+        
+        .reminder-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-left: 4px solid;
+            position: relative;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .reminder-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .reminder-card.urgent {
+            border-left-color: #ff4757;
+            background: linear-gradient(135deg, #fff 0%, #ffebee 100%);
+        }
+        
+        .reminder-card.medium {
+            border-left-color: #ffa502;
+            background: linear-gradient(135deg, #fff 0%, #fff8e1 100%);
+        }
+        
+        .reminder-card.low {
+            border-left-color: #2ed573;
+            background: linear-gradient(135deg, #fff 0%, #e8f5e8 100%);
+        }
+        
+        .reminder-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .reminder-source {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .reminder-time {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        .reminder-details {
+            font-size: 13px;
+            color: #777;
+            line-height: 1.4;
+        }
+        
+        .priority-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .priority-high {
+            background: #ff4757;
+        }
+        
+        .priority-medium {
+            background: #ffa502;
+        }
+        
+        .priority-low {
+            background: #2ed573;
+        }
+        
+        .ai-processing {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .ai-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 420px;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 15px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            border-radius: 25px 25px 0 0;
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            min-width: 60px;
+        }
+        
+        .nav-item:hover, .nav-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: translateY(-5px);
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        
+        .nav-label {
+            font-size: 10px;
+            font-weight: 500;
+        }
+        
+        .interests-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .tag {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .settings-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .settings-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .settings-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .toggle {
+            width: 50px;
+            height: 25px;
+            background: #ddd;
+            border-radius: 25px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle.active {
+            background: #2ed573;
+        }
+        
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 21px;
+            height: 21px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+        
+        .toggle.active::after {
+            transform: translateX(25px);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .calendar-day.header {
+            font-weight: bold;
+            color: #666;
+            cursor: default;
+        }
+        
+        .calendar-day.today {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            color: white;
+        }
+        
+        .calendar-day.has-event {
+            background: #ffebee;
+            color: #ff4757;
+            font-weight: bold;
+        }
+        
+        .calendar-day:hover:not(.header) {
+            background: #f0f0f0;
+        }
+        
+        .onboarding {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .onboarding-icon {
+            width: 120px;
+            height: 120px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 30px;
+            font-size: 50px;
+            color: white;
+        }
+        
+        .onboarding h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .onboarding p {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+        }
+        
+        .message-item {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .message-sender {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .message-content {
+            font-size: 13px;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        
+        .ai-analysis {
+            background: #f0f8ff;
+            border-left: 3px solid #4facfe;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        
+        .analysis-title {
+            font-weight: 600;
+            color: #4facfe;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Page 1: Onboarding -->
+        <div class="page active" id="onboarding">
+            <div class="onboarding">
+                <div class="onboarding-icon">🤖</div>
+                <h1>Smart Reminder Assistant</h1>
+                <p>Never miss another exam, deadline, or opportunity! Our AI automatically scans your messages and creates smart reminders.</p>
+                <button class="btn-primary" onclick="showPage('dashboard')">Get Started</button>
+                
+                <div style="margin-top: 40px;">
+                    <h3 style="color: #333; margin-bottom: 20px;">How it works:</h3>
+                    <div style="text-align: left; max-width: 300px; margin: 0 auto;">
+                        <p style="margin-bottom: 15px;">📱 <strong>Scans</strong> SMS, emails, notifications</p>
+                        <p style="margin-bottom: 15px;">🤖 <strong>AI analyzes</strong> and extracts deadlines</p>
+                        <p style="margin-bottom: 15px;">⚡ <strong>Auto-creates</strong> smart reminders</p>
+                        <p style="margin-bottom: 15px;">🎯 <strong>Filters</strong> by your interests</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 2: Main Dashboard -->
+        <div class="page" id="dashboard">
+            <div class="header">
+                <div class="back-btn" onclick="showPage('onboarding')">←</div>
+                <div class="header-title">
+                    <div class="user-profile">
+                        <div class="user-avatar">AR</div>
+                        <div class="user-info">
+                            <h2>Arjun Reddy</h2>
+                            <p>Engineering Student • GATE Aspirant</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="menu-btn" onclick="showPage('settings')">⚙️</div>
+            </div>
+            
+            <div class="main-content">
+                <div class="interests-tags">
+                    <span class="tag">🎯 GATE Exam</span>
+                    <span class="tag">💼 Internships</span>
+                    <span class="tag">🏆 Hackathons</span>
+                    <span class="tag">📚 Scholarships</span>
+                    <span class="tag">⚽ Sports</span>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-card" onclick="showPage('all-reminders')">
+                        <div class="stat-number" id="totalReminders">12</div>
+                        <div class="stat-label">Active Reminders</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">3</div>
+                        <div class="stat-label">This Week</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">98%</div>
+                        <div class="stat-label">Success Rate</div>
+                    </div>
+                </div>
+                
+                <div class="ai-processing">
+                    <div class="ai-icon">🤖</div>
+                    <h3>AI Assistant Active</h3>
+                    <p>Monitoring 15 sources • Found 4 new deadlines today!</p>
+                    <button style="background:rgba(255,255,255,0.3); border:none; color:#333; padding:8px 16px; border-radius:15px; margin-top:10px; cursor:pointer;" onclick="showPage('ai-analysis')">View AI Analysis</button>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">⚡</div>
+                        Urgent This Week
+                    </div>
+                    
+                    <div class="reminder-card urgent" onclick="showReminderDetail('gate')">
+                        <div class="priority-badge priority-high">HIGH</div>
+                        <div class="reminder-title">GATE 2025 Application Deadline</div>
+                        <div class="reminder-source">📱 SMS - GATE Official</div>
+                        <div class="reminder-time">⏰ Tomorrow, Sept 22, 11:59 PM</div>
+                        <div class="reminder-details">Last date to apply for GATE 2025. Documents pending!</div>
+                    </div>
+                    
+                    <div class="reminder-card medium" onclick="showReminderDetail('amazon')">
+                        <div class="priority-badge priority-medium">MEDIUM</div>
+                        <div class="reminder-title">Amazon Internship Interview</div>
+                        <div class="reminder-source">📧 Email - Amazon Recruiters</div>
+                        <div class="reminder-time">⏰ Sept 29, 10:00 AM</div>
+                        <div class="reminder-details">Technical interview scheduled. Prepare DSA & System Design.</div>
+                    </div>
+                    
+                    <button style="background:transparent; border:2px solid #667eea; color:#667eea; padding:10px 20px; border-radius:20px; cursor:pointer; width:100%;" onclick="showPage('all-reminders')">View All Reminders</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 3: All Reminders -->
+        <div class="page" id="all-reminders">
+            <div class="header">
+                <div class="back-btn" onclick="showPage('dashboard')">←</div>
+                <div class="header-title">
+                    <h2>All Reminders</h2>
+                </div>
+                <div class="menu-btn" onclick="showPage('calendar')">📅</div>
+            </div>
+            
+            <div class="main-content">
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">⚡</div>
+                        Urgent (2)
+                    </div>
+                    
+                    <div class="reminder-card urgent">
+                        <div class="priority-badge priority-high">HIGH</div>
+                        <div class="reminder-title">GATE 2025 Application</div>
+                        <div class="reminder-source">📱 SMS - GATE Official</div>
+                        <div class="reminder-time">⏰ Sept 22, 11:59 PM</div>
+                        <div class="reminder-details">Upload documents and complete payment</div>
+                    </div>
+                    
+                    <div class="reminder-card urgent">
+                        <div class="priority-badge priority-high">HIGH</div>
+                        <div class="reminder-title">SIH Team Registration</div>
+                        <div class="reminder-source">📲 WhatsApp - College Group</div>
+                        <div class="reminder-time">⏰ Sept 26, 6:00 PM</div>
+                        <div class="reminder-details">Smart India Hackathon internal selection</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">🗓️</div>
+                        This Week (4)
+                    </div>
+                    
+                    <div class="reminder-card medium">
+                        <div class="priority-badge priority-medium">MEDIUM</div>
+                        <div class="reminder-title">Google GSoC Results</div>
+                        <div class="reminder-source">📧 Email - Google Open Source</div>
+                        <div class="reminder-time">⏰ Sept 25, 2:00 PM</div>
+                    </div>
+                    
+                    <div class="reminder-card medium">
+                        <div class="priority-badge priority-medium">MEDIUM</div>
+                        <div class="reminder-title">Amazon Interview</div>
+                        <div class="reminder-source">📧 Email - Amazon Recruiters</div>
+                        <div class="reminder-time">⏰ Sept 29, 10:00 AM</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">📅</div>
+                        Next Week (6)
+                    </div>
+                    
+                    <div class="reminder-card low">
+                        <div class="priority-badge priority-low">LOW</div>
+                        <div class="reminder-title">KVPY Scholarship Exam</div>
+                        <div class="reminder-source">📱 App - KVPY Official</div>
+                        <div class="reminder-time">⏰ Oct 5, 5:00 PM</div>
+                    </div>
+                    
+                    <div class="reminder-card low">
+                        <div class="priority-badge priority-low">LOW</div>
+                        <div class="reminder-title">College Football Tournament</div>
+                        <div class="reminder-source">📢 Notice Board</div>
+                        <div class="reminder-time">⏰ Oct 8-12</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 4: Calendar View -->
+        <div class="page" id="calendar">
+            <div class="header">
+                <div class="back-btn" onclick="showPage('all-reminders')">←</div>
+                <div class="header-title">
+                    <h2>September 2024</h2>
+                </div>
+                <div class="menu-btn">📊</div>
+            </div>
+            
+            <div class="main-content">
+                <div class="calendar-grid">
+                    <div class="calendar-day header">S</div>
+                    <div class="calendar-day header">M</div>
+                    <div class="calendar-day header">T</div>
+                    <div class="calendar-day header">W</div>
+                    <div class="calendar-day header">T</div>
+                    <div class="calendar-day header">F</div>
+                    <div class="calendar-day header">S</div>
+                    
+                    <div class="calendar-day">1</div>
+                    <div class="calendar-day">2</div>
+                    <div class="calendar-day">3</div>
+                    <div class="calendar-day">4</div>
+                    <div class="calendar-day">5</div>
+                    <div class="calendar-day">6</div>
+                    <div class="calendar-day">7</div>
+                    
+                    <div class="calendar-day">8</div>
+                    <div class="calendar-day">9</div>
+                    <div class="calendar-day">10</div>
+                    <div class="calendar-day">11</div>
+                    <div class="calendar-day">12</div>
+                    <div class="calendar-day">13</div>
+                    <div class="calendar-day">14</div>
+                    
+                    <div class="calendar-day">15</div>
+                    <div class="calendar-day">16</div>
+                    <div class="calendar-day">17</div>
+                    <div class="calendar-day">18</div>
+                    <div class="calendar-day">19</div>
+                    <div class="calendar-day">20</div>
+                    <div class="calendar-day today">21</div>
+                    
+                    <div class="calendar-day has-event">22</div>
+                    <div class="calendar-day">23</div>
+                    <div class="calendar-day">24</div>
+                    <div class="calendar-day has-event">25</div>
+                    <div class="calendar-day has-event">26</div>
+                    <div class="calendar-day">27</div>
+                    <div class="calendar-day">28</div>
+                    
+                    <div class="calendar-day has-event">29</div>
+                    <div class="calendar-day">30</div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">📅</div>
+                        Events This Week
+                    </div>
+                    
+                    <div class="reminder-card urgent">
+                        <div class="reminder-title">Sept 22 - GATE Application Deadline</div>
+                        <div class="reminder-source">📱 SMS Detection</div>
+                    </div>
+                    
+                    <div class="reminder-card medium">
+                        <div class="reminder-title">Sept 25 - GSoC Results</div>
+                        <div class="reminder-source">📧 Email Detection</div>
+                    </div>
+                    
+                    <div class="reminder-card medium">
+                        <div class="reminder-title">Sept 26 - SIH Registration</div>
+                        <div class="reminder-source">📲 WhatsApp Detection</div>
+                    </div>
+                    
+                    <div class="reminder-card medium">
+                        <div class="reminder-title">Sept 29 - Amazon Interview</div>
+                        <div class="reminder-source">📧 Email Detection</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 5: AI Analysis -->
+        <div class="page" id="ai-analysis">
+            <div class="header">
+                <div class="back-btn" onclick="showPage('dashboard')">←</div>
+                <div class="header-title">
+                    <h2>AI Analysis Center</h2>
+                </div>
+                <div class="menu-btn">🔍</div>
+            </div>
+            
+            <div class="main-content">
+                <div class="ai-processing">
+                    <div class="ai-icon">🧠</div>
+                    <h3>Live AI Processing</h3>
+                    <p><strong>Sources Monitored:</strong> SMS, Email, WhatsApp, Telegram, Apps</p>
+                    <p><strong>Messages Processed Today:</strong> 47</p>
+                    <p><strong>Deadlines Found:</strong> 4 new</p>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">📊</div>
+                        Recent AI Detections
+                    </div>
+                    
+                    <div class="message-item">
+                        <div class="message-header">
+                            <div class="message-sender">📱 GATE Official (SMS)</div>
+                            <div class="message-time">2 hours ago</div>
+                        </div>
+                        <div class="message-content">
+                            "Attention GATE 2025 aspirants! Last date to apply is 22nd September 2024, 11:59 PM. Complete your application at gate.iisc.ac.in"
+                        </div>
+                        <div class="ai-analysis">
+                            <div class="analysis-title">🤖 AI Analysis:</div>
+                            <p>✅ Deadline detected: September 22, 2024 11:59 PM<br>
+                            ✅ Category: GATE Exam (matches user interests)<br>
+                            ✅ Priority: HIGH (deadline tomorrow)<br>
+                            ✅ Action required: Complete application</p>
+                        </div>
+                    </div>
+                    
+                    <div class="message-item">
+                        <div class="message-header">
+                            <div class="message-sender">📧 Amazon Recruiters</div>
+                            <div class="message-time">5 hours ago</div>
+                        </div>
+                        <div class="message-content">
+                            "Dear Arjun, Your technical interview for Amazon SDE Intern role is scheduled for September 29th, 2024 at 10:00 AM IST. Please prepare data structures, algorithms, and system design concepts."
+                        </div>
+                        <div class="ai-analysis">
+                            <div class="analysis-title">🤖 AI Analysis:</div>
+                            <p>✅ Event: Technical Interview<br>
+                            ✅ Date/Time: September 29, 2024 10:00 AM<br>
+                            ✅ Category: Internship (matches user interests)<br>
+                            ✅ Preparation needed: DSA, System Design</p>
+                        </div>
+                    </div>
+                    
+                    <div class="message-item">
+                        <div class="message-header">
+                            <div class="message-sender">📲 College WhatsApp Group</div>
+                            <div class="message-time">1 day ago</div>
+                        </div>
+                        <div class="message-content">
+                            "🚀 Smart India Hackathon internal selection on campus! Register your team by September 26th, 6 PM. Theme: Healthcare Innovation. Prize: ₹1 Lakh + SIH qualification"
+                        </div>
+                        <div class="ai-analysis">
+                            <div class="analysis-title">🤖 AI Analysis:</div>
+                            <p>✅ Event: Hackathon Registration<br>
+                            ✅ Deadline: September 26, 2024 6:00 PM<br>
+                            ✅ Category: Hackathon (matches user interests)<br>
+                            ✅ Team action required</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">🎯</div>
+                        AI Smart Suggestions
+                    </div>
+                    
+                    <div class="reminder-card low">
+                        <div class="reminder-title">📚 GATE Prep Schedule</div>
+                        <div class="reminder-details">
+                            AI suggests: Create daily study reminders leading up to GATE exam date. Based on your application deadline, exam is likely in February 2025.
+                        </div>
+                    </div>
+                    
+                    <div class="reminder-card low">
+                        <div class="reminder-title">💼 Interview Preparation</div>
+                        <div class="reminder-details">
+                            AI suggests: Schedule practice sessions for DSA problems and system design concepts before your Amazon interview on Sept 29.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 6: Settings -->
+        <div class="page" id="settings">
+            <div class="header">
+                <div class="back-btn" onclick="showPage('dashboard')">←</div>
+                <div class="header-title">
+                    <h2>Settings & Preferences</h2>
+                </div>
+                <div class="menu-btn">👤</div>
+            </div>
+            
+            <div class="main-content">
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">🔍</div>
+                        AI Monitoring Sources
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">📱</div>
+                            <div>
+                                <div style="font-weight: 600;">SMS Messages</div>
+                                <div style="font-size: 12px; color: #666;">Scan incoming SMS for deadlines</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">📧</div>
+                            <div>
+                                <div style="font-weight: 600;">Email Messages</div>
+                                <div style="font-size: 12px; color: #666;">Monitor Gmail, Outlook, etc.</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">📲</div>
+                            <div>
+                                <div style="font-weight: 600;">WhatsApp Groups</div>
+                                <div style="font-size: 12px; color: #666;">College, study groups</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">🔔</div>
+                            <div>
+                                <div style="font-weight: 600;">App Notifications</div>
+                                <div style="font-size: 12px; color: #666;">Official exam apps, portals</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">📢</div>
+                            <div>
+                                <div style="font-weight: 600;">Notice Boards (Beta)</div>
+                                <div style="font-size: 12px; color: #666;">OCR scan of physical notices</div>
+                            </div>
+                        </div>
+                        <div class="toggle" onclick="toggleSwitch(this)"></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">🎯</div>
+                        Interest Categories
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">🎓</div>
+                            <div>
+                                <div style="font-weight: 600;">Competitive Exams</div>
+                                <div style="font-size: 12px; color: #666;">GATE, JEE, NEET, CAT, etc.</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">💼</div>
+                            <div>
+                                <div style="font-weight: 600;">Internships & Jobs</div>
+                                <div style="font-size: 12px; color: #666;">Applications, interviews, results</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">🏆</div>
+                            <div>
+                                <div style="font-weight: 600;">Hackathons & Competitions</div>
+                                <div style="font-size: 12px; color: #666;">SIH, coding contests, etc.</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">📚</div>
+                            <div>
+                                <div style="font-weight: 600;">Scholarships & Grants</div>
+                                <div style="font-size: 12px; color: #666;">Educational funding opportunities</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">⚽</div>
+                            <div>
+                                <div style="font-weight: 600;">Sports & Cultural Events</div>
+                                <div style="font-size: 12px; color: #666;">College tournaments, fests</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">🏛️</div>
+                            <div>
+                                <div style="font-weight: 600;">Government Schemes</div>
+                                <div style="font-size: 12px; color: #666;">Applications, renewals</div>
+                            </div>
+                        </div>
+                        <div class="toggle" onclick="toggleSwitch(this)"></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">🔔</div>
+                        Reminder Preferences
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">⏰</div>
+                            <div>
+                                <div style="font-weight: 600;">Smart Timing</div>
+                                <div style="font-size: 12px; color: #666;">AI chooses optimal reminder times</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">🔄</div>
+                            <div>
+                                <div style="font-weight: 600;">Repeat Reminders</div>
+                                <div style="font-size: 12px; color: #666;">Multiple alerts for important deadlines</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">📱</div>
+                            <div>
+                                <div style="font-weight: 600;">Push Notifications</div>
+                                <div style="font-size: 12px; color: #666;">Instant alerts on phone</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">
+                        <div class="section-icon">🔒</div>
+                        Privacy & Security
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">💾</div>
+                            <div>
+                                <div style="font-weight: 600;">Local Processing</div>
+                                <div style="font-size: 12px; color: #666;">Process messages on device only</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <div class="settings-icon">🗑️</div>
+                            <div>
+                                <div style="font-weight: 600;">Auto-Delete Messages</div>
+                                <div style="font-size: 12px; color: #666;">Remove processed data after analysis</div>
+                            </div>
+                        </div>
+                        <div class="toggle active" onclick="toggleSwitch(this)"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page 7: Reminder Detail -->
+        <div class="page" id="reminder-detail">
+            <div class="header">
+                <div class="back-btn" onclick="showPage('dashboard')">←</div>
+                <div class="header-title">
+                    <h2>Reminder Details</h2>
+                </div>
+                <div class="menu-btn">⚙️</div>
+            </div>
+            
+            <div class="main-content" id="reminder-detail-content">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="showPage('dashboard')">
+                <div class="nav-icon">🏠</div>
+                <div class="nav-label">Home</div>
+            </div>
+            <div class="nav-item" onclick="showPage('all-reminders')">
+                <div class="nav-icon">📋</div>
+                <div class="nav-label">Reminders</div>
+            </div>
+            <div class="nav-item" onclick="showPage('calendar')">
+                <div class="nav-icon">📅</div>
+                <div class="nav-label">Calendar</div>
+            </div>
+            <div class="nav-item" onclick="showPage('ai-analysis')">
+                <div class="nav-icon">🤖</div>
+                <div class="nav-label">AI Center</div>
+            </div>
+            <div class="nav-item" onclick="showPage('settings')">
+                <div class="nav-icon">⚙️</div>
+                <div class="nav-label">Settings</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentPage = 'onboarding';
+        
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageId).classList.add('active');
+            currentPage = pageId;
+            
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find and activate corresponding nav item
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                const label = item.querySelector('.nav-label').textContent.toLowerCase();
+                if (
+                    (pageId === 'dashboard' && label === 'home') ||
+                    (pageId === 'all-reminders' && label === 'reminders') ||
+                    (pageId === 'calendar' && label === 'calendar') ||
+                    (pageId === 'ai-analysis' && label === 'ai center') ||
+                    (pageId === 'settings' && label === 'settings')
+                ) {
+                    item.classList.add('active');
+                }
+            });
+        }
+        
+        function toggleSwitch(element) {
+            element.classList.toggle('active');
+        }
+        
+        function showReminderDetail(type) {
+            const detailContent = document.getElementById('reminder-detail-content');
+            
+            if (type === 'gate') {
+                detailContent.innerHTML = `
+                    <div class="reminder-card urgent" style="margin-bottom: 30px;">
+                        <div class="priority-badge priority-high">HIGH PRIORITY</div>
+                        <h2 style="color: #333; margin-bottom: 20px;">🎯 GATE 2025 Application Deadline</h2>
+                        
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                            <strong>⏰ TIME REMAINING: 1 Day 2 Hours</strong>
+                        </div>
+                        
+                        <div class="section">
+                            <h3 style="margin-bottom: 15px;">📱 Original Message</h3>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                                <strong>From:</strong> GATE-OFFICIAL<br>
+                                <strong>Time:</strong> Today 2:15 PM<br>
+                                <strong>Message:</strong> "Attention GATE 2025 aspirants! Last date to apply is 22nd September 2024, 11:59 PM. Complete your application at gate.iisc.ac.in. Upload documents and pay fees immediately."
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h3 style="margin-bottom: 15px;">🤖 AI Analysis</h3>
+                            <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                                ✅ <strong>Deadline:</strong> September 22, 2024 11:59 PM<br>
+                                ✅ <strong>Category:</strong> GATE Exam (High Priority)<br>
+                                ✅ <strong>Action Required:</strong> Upload documents + Pay fees<br>
+                                ✅ <strong>Website:</strong> gate.iisc.ac.in<br>
+                                ✅ <strong>Time Criticality:</strong> URGENT (< 48 hours)
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h3 style="margin-bottom: 15px;">✅ Action Items</h3>
+                            <div style="background: #f3e5f5; padding: 15px; border-radius: 10px;">
+                                <div style="margin-bottom: 10px;">📄 <strong>Upload Documents:</strong> Photo, Signature, Certificates</div>
+                                <div style="margin-bottom: 10px;">💳 <strong>Payment:</strong> Application fees (varies by category)</div>
+                                <div style="margin-bottom: 10px;">🔍 <strong>Review:</strong> Check all details before submission</div>
+                                <div>⏰ <strong>Submit:</strong> Before 11:59 PM tomorrow</div>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 30px;">
+                            <button class="btn-primary" style="margin-right: 10px;">📱 Set Additional Reminders</button>
+                            <button style="background: #2ed573; color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer;">✅ Mark as Done</button>
+                        </div>
+                    </div>
+                `;
+            } else if (type === 'amazon') {
+                detailContent.innerHTML = `
+                    <div class="reminder-card medium" style="margin-bottom: 30px;">
+                        <div class="priority-badge priority-medium">MEDIUM PRIORITY</div>
+                        <h2 style="color: #333; margin-bottom: 20px;">💼 Amazon SDE Intern Interview</h2>
+                        
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                            <strong>⏰ INTERVIEW IN: 8 Days</strong><br>
+                            <strong>📅 Date:</strong> September 29, 2024<br>
+                            <strong>🕙 Time:</strong> 10:00 AM IST
+                        </div>
+                        
+                        <div class="section">
+                            <h3 style="margin-bottom: 15px;">📧 Original Email</h3>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                                <strong>From:</strong> amazon-recruiters@amazon.com<br>
+                                <strong>Subject:</strong> Technical Interview Scheduled - SDE Intern<br>
+                                <strong>Message:</strong> "Dear Arjun, Your technical interview for Amazon SDE Intern role is scheduled for September 29th, 2024 at 10:00 AM IST. Please prepare data structures, algorithms, and system design concepts. Meeting link will be shared 24 hours prior."
+                            </div>
+                        </div>
+                        
+                        <div class="section">
+                            <h3 style="margin-bottom: 15px;">🎯 Preparation Checklist</h3>
+                            <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                                ✅ <strong>Data Structures:</strong> Arrays, Linked Lists, Trees, Graphs<br>
+                                ✅ <strong>Algorithms:</strong> Sorting, Searching, Dynamic Programming<br>
+                                ✅ <strong>System Design:</strong> Scalability, Load Balancing, Databases<br>
+                                ✅ <strong>Amazon Principles:</strong> Leadership Principles (14 key areas)<br>
+                                ✅ <strong>Practice:</strong> LeetCode problems, Mock interviews
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 30px;">
+                            <button class="btn-primary" style="margin-right: 10px;">📚 Study Plan</button>
+                            <button style="background: #ffa502; color: white; border: none; padding: 15px 30px; border-radius: 25px; cursor: pointer;">⏰ Set Prep Reminders</button>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            showPage('reminder-detail');
+        }
+        
+        // Demo functionality for adding new reminders
+        function addLiveReminder() {
+            const newReminder = {
+                title: "IIT Bombay M.Tech Admission",
+                source: "📧 Email from IIT Bombay Admissions",
+                time: "Oct 15, 5:00 PM",
+                details: "Application deadline for M.Tech programs. GATE score required.",
+                priority: "high"
+            };
+            
+            // Add to dashboard
+            const urgentSection = document.querySelector('#dashboard .section');
+            const newCard = document.createElement('div');
+            newCard.className = 'reminder-card urgent';
+            newCard.innerHTML = `
+                <div class="priority-badge priority-high">HIGH</div>
+                <div class="reminder-title">${newReminder.title}</div>
+                <div class="reminder-source">${newReminder.source}</div>
+                <div class="reminder-time">⏰ ${newReminder.time}</div>
+                <div class="reminder-details">${newReminder.details}</div>
+            `;
+            
+            urgentSection.appendChild(newCard);
+            
+            // Update stats
+            const totalReminders = document.getElementById('totalReminders');
+            totalReminders.textContent = parseInt(totalReminders.textContent) + 1;
+        }
+        
+        // Auto-demo - simulate new reminders being added
+        setInterval(() => {
+            if (Math.random() < 0.1) { // 10% chance every interval
+                // Could add more demo functionality here
+            }
+        }, 5000);
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Auto-progress from onboarding after 3 seconds if desired
+            // setTimeout(() => showPage('dashboard'), 3000);
+        });
+    </script>
+</body>
+</html>
